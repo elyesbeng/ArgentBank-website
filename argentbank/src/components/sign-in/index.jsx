@@ -1,80 +1,134 @@
-import React, { useState } from "react";
-import "./signIn.css"; // Assurez-vous d'avoir votre fichier CSS correspondant
+import React , { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "../redux/services/authActions";
+import { useNavigate, Link } from "react-router-dom";
+import "./signIn.css";
+import { getUserInfo } from "../redux/services/userActions";
 
-function SignIn() {
+
+const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [notification, setNotification] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = async (event) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { token } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    /* Récupérer les données du "RemeberMe" depuis le LocalStorage */
+    const storedEmail = localStorage.getItem("email");
+    const storedRememberMe = localStorage.getItem("rememberMe") === "true";
+    if (storedEmail) {
+      setEmail(storedEmail);
+      setRememberMe(storedRememberMe);
+    }
+  }, []);
+
+  const handleLoginEvent = (event) => {
     event.preventDefault();
+    let userCredentials = { email, password };
+    dispatch(loginUser(userCredentials));
 
-    const user = {
-      email: email,
-      password: password,
-    };
-
-    try {
-      const response = await fetch("http://localhost:5678/api/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(user),
-      });
-
-      if (response.status === 200) {
-        const data = await response.json();
-        const token = data.token;
-        localStorage.setItem("token", token);
-        window.location.href = `${window.location.origin}/user`;
-      } else {
-        const errorData = await response.json();
-        setErrorMessage(errorData.error); // Afficher un message d'erreur spécifique depuis l'API
-      }
-    } catch (error) {
-      console.error("Erreur lors de la connexion:", error);
+    /* Enregistrer les données du "RememberMe dans le localStorage */
+    if (rememberMe) {
+      localStorage.setItem("email", email);
+      localStorage.setItem("rememberMe", rememberMe.toString());
+    } else {
+      localStorage.removeItem("email");
+      localStorage.removeItem("rememberMe");
     }
   };
 
+  // Fonction pour gérer le changement de la case à cocher
+  const handleRememberMeChange = () => {
+    setRememberMe(!rememberMe);
+  };
+
+  useEffect(() => {
+    if (token) {
+      setEmail("");
+      setPassword("");
+      setTimeout(() => navigate("/User"), 2000);
+      localStorage.setItem(
+        "AuthToken",
+        token
+      ); 
+      getUserInfo(token, dispatch);
+      setNotification(
+        "Connexion résussie. Redirection..."
+      ); /* Affichage d'une Notification de réussite */
+    } else {
+      if (token && handleLoginEvent) {
+        setNotification("La Connexion a échoué. Veuillez réessayer.");
+        setTimeout(() => setNotification(""), 2000);
+      } else {
+        
+      }
+    }
+  }, [token, navigate]);
+
   return (
-    <main className="main bg-dark">
-      <section className="sign-in-content">
-        <i className="fa fa-user-circle sign-in-icon"></i>
-        <h1>Sign In</h1>
-        <form onSubmit={handleSubmit}>
-          <div className="input-wrapper">
-            <label htmlFor="mail">Email</label>
-            <input
-              type="email"
-              id="mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="input-wrapper">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <div className="input-remember">
-            <input type="checkbox" id="remember-me" />
-            <label htmlFor="remember-me">Remember me</label>
-          </div>
-          <button type="submit" className="sign-in-button">
-            Sign In
-          </button>
-          {errorMessage && (
-            <p className="mot-de-passe-oublie">{errorMessage}</p>
+    <>
+      <main className="main bg-dark">
+        <section className="sign-in-content">
+          <h1>Sign In</h1>
+          <form onSubmit={handleLoginEvent}>
+            <div className="input-wrapper">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-required="true"
+                required
+              />
+            </div>
+            <div className="input-wrapper">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-label="Mot de Passe"
+                aria-required="true"
+                required
+              />
+            </div>
+            <div className="input-remember">
+              <input
+                type="checkbox"
+                id="remember-me"
+                checked={rememberMe}
+                onChange={handleRememberMeChange}
+              />
+              <label htmlFor="remember-me">Remember me</label>
+            </div>
+            <button type="submit" className="sign-in-button">
+              Sign in
+            </button>{" "}
+            {/* Bouton de Connexion */}
+            <p>
+              {" "}
+              new customer ? <Link to="/Sign-up">Sign Up</Link>{" "}
+              {/* Lien vers la page d'inscription */}
+            </p>
+          </form>
+        </section>
+        <div className="notification-container">
+          {notification && (
+            <div className="notification">
+              {notification}
+            </div>
           )}
-        </form>
-      </section>
-    </main>
+        </div>
+      </main>
+    </>
   );
-}
+};
 
 export default SignIn;
