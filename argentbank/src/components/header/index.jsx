@@ -28,12 +28,12 @@ const Header = () => {
         <h1 className="sr-only">Argent Bank</h1>
       </Link>
       {token ? (
-        <div>
-          <Link to="/" className="main-nav-item" onClick={switchLogout}>
-            Sign Out
-          </Link>
+        <div className='Name-logout'>
           <Link to="/user" className='user-link'>
             {user.userName}
+          </Link>
+          <Link to="/" className="main-nav-item" onClick={switchLogout}>
+            Sign Out
           </Link>
         </div>
       ) : (

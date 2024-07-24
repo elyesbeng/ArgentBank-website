@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import './user.css';
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getUserInfo, updateUsername } from "../redux/services/userActions";
 import { useNavigate } from "react-router-dom";
 
 export default function User() {
-  const storedUser = JSON.parse(localStorage.getItem("user"));
-  const [currentUserName, setCurrentUserName] = useState(storedUser ? storedUser.userName : "");
+  const user = useSelector((state) => state.auth.user);
+  const [currentUserName, setCurrentUserName] = useState(user ? user.userName : "");
   const [isEditing, setIsEditing] = useState(false);
   const [newUserName, setNewUserName] = useState(currentUserName);
   const token = localStorage.getItem("AuthToken");
@@ -16,15 +16,14 @@ export default function User() {
   useEffect(() => {
     async function fetchData() {
       if (!token) {
-        navigate("/user");
+        navigate("/Sign-in");
         return;
       }
 
       try {
         await getUserInfo(token, dispatch);
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        if (storedUser && storedUser.userName) {
-          setCurrentUserName(storedUser.userName);
+        if (user && user.userName) {
+          setCurrentUserName(user.userName);
         }
       } catch (error) {
         alert("Failed to fetch user profile");
@@ -33,7 +32,7 @@ export default function User() {
     }
 
     fetchData();
-  }, [token, navigate, dispatch]);
+  }, [token, navigate, dispatch, user]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -43,8 +42,7 @@ export default function User() {
     event.preventDefault();
     try {
       await updateUsername(token, newUserName, dispatch);
-      const updatedUser = { ...storedUser, userName: newUserName };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      const updatedUser = { ...user, userName: newUserName };
       setCurrentUserName(newUserName);
       setIsEditing(false);
     } catch (error) {
@@ -61,19 +59,19 @@ export default function User() {
   return (
     <main className="main bg-dark">
       {isEditing ? (
-      <div className="editing-header">
-        <h1>Edit user info</h1>
+        <div className="editing-header">
+          <h1>Edit user info</h1>
           <div className="form-editing">
             <div className="input-Name">
-                <p>Lase Name:</p>
-                <p className="First-lastName">{storedUser.lastName}</p>
+              <p>Last Name:</p>
+              <p className="First-lastName">{user.lastName}</p>
             </div>
             <div className="input-Name">
-                <p>First Name:</p>
-                <p className="First-lastName">{storedUser.firstName}</p>
+              <p>First Name:</p>
+              <p className="First-lastName">{user.firstName}</p>
             </div>
             <div className="input-new-user-name">
-              <label for="New-user-Name">User Name:</label>
+              <label htmlFor="New-user-Name">User Name:</label>
               <input
                 type="text"
                 id="New-user-Name"
@@ -89,14 +87,14 @@ export default function User() {
             </button>
           </div>
         </div>
-        ) : (
-          <div className="header">
-            <h1>Welcome back<br />{currentUserName}</h1>
-              <button className="edit-button" onClick={handleEditClick}>
-                Edit Name
-              </button>
-          </div>
-        )}
+      ) : (
+        <div className="header">
+          <h1>Welcome back<br />{currentUserName}</h1>
+          <button className="edit-button" onClick={handleEditClick}>
+            Edit Name
+          </button>
+        </div>
+      )}
       <h2 className="sr-only">Accounts</h2>
       <section className="account">
         <div className="account-content-wrapper">
